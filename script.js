@@ -1,170 +1,222 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const startBtn = document.getElementById("startBtn");
-const restartBtn = document.getElementById("restartBtn");
-const gameOverBanner = document.getElementById("gameOverBanner");
-
-let frames = 0;
-let score = 0;
-let gameStarted = false;
-let gameOver = false;
-
 // Load assets
 const coinImg = new Image();
 coinImg.src = "xioncoin.png";
 
-const flapSound = new Audio("flap.wav");
-const pointSound = new Audio("point.wav");
-const hitSound = new Audio("hit.wav");
-const dieSound = new Audio("die.wav");
-const swooshSound = new Audio("swoosh.wav");
+const sounds = {
+  flap: new Audio("flap.wav"),
+  swoosh: new Audio("swoosh.wav"),
+  hit: new Audio("hit.wav"),
+  die: new Audio("die.wav"),
+  point: new Audio("point.wav")
+};
+
+// Game variables
+let frames = 0;
+let score = 0;
+let bestScore = 0;
+let pipes = [];
+let gameState = "start"; // start, playing, gameover
 
 // Bird (coin)
-let coin = {
+const coin = {
   x: 50,
   y: 150,
-  width: 30,
-  height: 30,
+  w: 30,
+  h: 30,
   gravity: 0.25,
-  lift: -4.6,
+  jump: 4.6,
   velocity: 0,
   draw() {
-    ctx.drawImage(coinImg, this.x, this.y, this.width, this.height);
-  },
-  update() {
-    this.velocity += this.gravity;
-    this.y += this.velocity;
-    if (this.y + this.height >= canvas.height) {
-      endGame();
-    }
+    ctx.drawImage(coinImg, this.x, this.y, this.w, this.h);
   },
   flap() {
-    this.velocity = this.lift;
-    flapSound.play();
+    this.velocity = -this.jump;
+    sounds.flap.play();
+  },
+  update() {
+    if (gameState === "playing") {
+      this.velocity += this.gravity;
+      this.y += this.velocity;
+      if (this.y + this.h >= canvas.height) {
+        gameOver();
+      }
+    }
+  },
+  reset() {
+    this.y = 150;
+    this.velocity = 0;
   }
 };
 
 // Pipes
-let pipes = [];
-function spawnPipe() {
-  let gap = 120;
-  let topHeight = Math.random() * (canvas.height - gap - 100) + 50;
-  pipes.push({
-    x: canvas.width,
-    top: topHeight,
-    bottom: topHeight + gap,
-    width: 50
-  });
+function drawPipe(x, y, h, flip = false) {
+  ctx.fillStyle = "#228B22"; // pipe body
+  ctx.fillRect(x, y, 50, h);
+  ctx.fillStyle = "#32CD32"; // lighter cap
+  if (flip) {
+    ctx.fillRect(x - 5, y, 60, 15);
+  } else {
+    ctx.fillRect(x - 5, y + h - 15, 60, 15);
+  }
 }
 
-// Reset
 function resetGame() {
-  frames = 0;
-  score = 0;
-  coin.y = 150;
-  coin.velocity = 0;
   pipes = [];
-  gameOverBanner.style.display = "none";
+  score = 0;
+  coin.reset();
+  gameState = "start";
 }
 
-// Game loop
-function gameLoop() {
-  if (!gameStarted || gameOver) return;
+function gameOver() {
+  gameState = "gameover";
+  sounds.hit.play();
+  sounds.die.play();
+}
 
+// Draw UI overlays
+function drawOverlay() {
+  if (gameState === "start") {
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#fff";
+    ctx.font = "24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Tap SPACE or Click", canvas.width / 2, canvas.height / 2 - 20);
+    ctx.fillText("to Start Flappy XION", canvas.width / 2, canvas.height / 2 + 20);
+  }
+
+  if (gameState === "gameover") {
+    // Yellow banner
+    ctx.fillStyle = "#FFD700";
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.fillRect(canvas.width / 2 - 80, canvas.height / 2 - 60, 160, 50);
+    ctx.strokeRect(canvas.width / 2 - 80, canvas.height / 2 - 60, 160, 50);
+
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 22px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 30);
+
+    // Score
+    ctx.fillStyle = "#fff";
+    ctx.font = "20px Arial";
+    ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2);
+
+    // Restart button
+    ctx.fillStyle = "#f44336";
+    ctx.fillRect(canvas.width / 2 - 60, canvas.height / 2 + 30, 120, 40);
+    ctx.fillStyle = "#fff";
+    ctx.font = "18px Arial";
+    ctx.fillText("Restart", canvas.width / 2, canvas.height / 2 + 58);
+  }
+}
+
+// Handle input
+canvas.addEventListener("click", function (evt) {
+  if (gameState === "start") {
+    gameState = "playing";
+    sounds.swoosh.play();
+  } else if (gameState === "playing") {
+    coin.flap();
+  } else if (gameState === "gameover") {
+    const rect = canvas.getBoundingClientRect();
+    const x = evt.clientX - rect.left;
+    const y = evt.clientY - rect.top;
+
+    // Restart button area
+    if (x >= canvas.width / 2 - 60 && x <= canvas.width / 2 + 60 &&
+        y >= canvas.height / 2 + 30 && y <= canvas.height / 2 + 70) {
+      resetGame();
+    }
+  }
+});
+document.addEventListener("keydown", function (e) {
+  if (e.code === "Space") {
+    if (gameState === "start") {
+      gameState = "playing";
+      sounds.swoosh.play();
+    } else if (gameState === "playing") {
+      coin.flap();
+    } else if (gameState === "gameover") {
+      resetGame();
+    }
+  }
+});
+
+// Main loop
+function loop() {
+  frames++;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Background (sky + clouds + sun)
+  // Background sky
   ctx.fillStyle = "#87CEEB";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "white";
-  ctx.beginPath();
-  ctx.arc(80, 80, 30, 0, Math.PI * 2); // Sun
-  ctx.fill();
-
-  ctx.beginPath(); // Cloud
-  ctx.arc(200, 100, 20, 0, Math.PI * 2);
-  ctx.arc(220, 100, 25, 0, Math.PI * 2);
-  ctx.arc(240, 100, 20, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Pipes
-  if (frames % 90 === 0) spawnPipe();
-  pipes.forEach((p, i) => {
-    p.x -= 2;
-    ctx.fillStyle = "#228B22";
-    ctx.fillRect(p.x, 0, p.width, p.top);
-    ctx.fillRect(p.x, p.bottom, p.width, canvas.height - p.bottom);
-
-    // Collision
-    if (
-      coin.x < p.x + p.width &&
-      coin.x + coin.width > p.x &&
-      (coin.y < p.top || coin.y + coin.height > p.bottom)
-    ) {
-      endGame();
+  // Draw pipes
+  if (gameState === "playing") {
+    if (frames % 90 === 0) {
+      const topHeight = Math.floor(Math.random() * 200) + 50;
+      const gap = 100;
+      pipes.push({
+        x: canvas.width,
+        top: topHeight,
+        bottom: canvas.height - (topHeight + gap),
+      });
     }
 
-    // Passed pipe
-    if (p.x + p.width === coin.x) {
-      score++;
-      pointSound.play();
-    }
+    pipes.forEach((pipe, i) => {
+      pipe.x -= 2;
+      drawPipe(pipe.x, 0, pipe.top, true); // top pipe
+      drawPipe(pipe.x, canvas.height - pipe.bottom, pipe.bottom, false); // bottom pipe
 
-    // Remove old pipes
-    if (p.x + p.width < 0) pipes.splice(i, 1);
-  });
+      // Collision
+      if (
+        coin.x < pipe.x + 50 &&
+        coin.x + coin.w > pipe.x &&
+        (coin.y < pipe.top || coin.y + coin.h > canvas.height - pipe.bottom)
+      ) {
+        gameOver();
+      }
 
-  // Bird
+      // Score
+      if (pipe.x + 50 === coin.x) {
+        score++;
+        sounds.point.play();
+      }
+
+      // Remove offscreen
+      if (pipe.x + 50 < 0) {
+        pipes.splice(i, 1);
+      }
+    });
+  } else {
+    // Draw existing pipes frozen
+    pipes.forEach((pipe) => {
+      drawPipe(pipe.x, 0, pipe.top, true);
+      drawPipe(pipe.x, canvas.height - pipe.bottom, pipe.bottom, false);
+    });
+  }
+
+  // Draw coin
   coin.update();
   coin.draw();
 
-  // Score
-  ctx.fillStyle = "#333";
-  ctx.font = "24px Arial";
-  ctx.fillText(`Score: ${score}`, 10, 30);
+  // Score display
+  if (gameState === "playing") {
+    ctx.fillStyle = "#000";
+    ctx.font = "20px Arial";
+    ctx.fillText("Score: " + score, 50, 30);
+  }
 
-  frames++;
-  requestAnimationFrame(gameLoop);
+  // UI overlays
+  drawOverlay();
+
+  requestAnimationFrame(loop);
 }
 
-// Game Over
-function endGame() {
-  if (!gameOver) {
-    hitSound.play();
-    dieSound.play();
-  }
-  gameOver = true;
-  gameOverBanner.style.display = "block";
-  restartBtn.style.display = "block";
-}
-
-// Controls
-document.addEventListener("keydown", e => {
-  if (e.code === "Space") {
-    if (gameStarted && !gameOver) coin.flap();
-  }
-});
-canvas.addEventListener("click", () => {
-  if (gameStarted && !gameOver) coin.flap();
-});
-
-// Start button
-startBtn.addEventListener("click", () => {
-  swooshSound.play();
-  gameStarted = true;
-  startBtn.style.display = "none";
-  restartBtn.style.display = "none";
-  resetGame();
-  gameLoop();
-});
-
-// Restart button
-restartBtn.addEventListener("click", () => {
-  swooshSound.play();
-  gameOver = false;
-  restartBtn.style.display = "none";
-  resetGame();
-  gameLoop();
-});
+resetGame();
+loop();
