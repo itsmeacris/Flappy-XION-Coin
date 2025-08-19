@@ -1,18 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flappy XION Coin</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Flappy XION</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #87CEEB; /* fallback sky blue */
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 28px;
+    }
+
+    #gameCanvas {
+      border: 3px solid #333;
+      border-radius: 8px;
+      background: #E0F6FF;
+      display: block;
+      margin-bottom: 15px;
+    }
+
+    .btn-container {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+
+    #startBtn {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    #startBtn:hover {
+      background-color: #45a049;
+      transform: scale(1.05);
+    }
+
+    #restartBtn {
+      background-color: #f44336;
+      color: white;
+    }
+
+    #restartBtn:hover {
+      background-color: #d7372b;
+      transform: scale(1.05);
+    }
+  </style>
 </head>
 <body>
-  <div id="menu">
-    <button id="startBtn">Start Game</button>
-    <p id="howToPlay">Press <b>SPACE</b> or <b>CLICK</b> to flap!</p>
-  </div>
-  <button id="restartBtn" style="display:none;">Restart</button>
+  <h1>Flappy XION</h1>
   <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+  <div class="btn-container">
+    <button id="startBtn">▶ Start</button>
+    <button id="restartBtn">↻ Restart</button>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
