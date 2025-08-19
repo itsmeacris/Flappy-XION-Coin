@@ -7,13 +7,19 @@
 </head>
 <body>
   <h1>Flappy XION</h1>
-  <div class="game-wrapper">
+
+  <div id="gameWrapper">
     <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-    <!-- Overlay Buttons -->
-    <button id="startBtn" class="overlay-btn">▶ Start</button>
-    <button id="restartBtn" class="overlay-btn">↻ Restart</button>
+    <!-- Start Button overlay -->
+    <button id="startBtn">▶ Start</button>
+
+    <!-- Game Over banner -->
+    <div id="gameOverBanner">Game Over</div>
   </div>
+
+  <!-- Restart Button -->
+  <button id="restartBtn">↻ Restart</button>
 
   <script src="script.js"></script>
 </body>
