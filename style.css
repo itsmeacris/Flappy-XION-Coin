@@ -1,13 +1,36 @@
 body {
   margin: 0;
+  padding: 0;
+  background: #70c5ce;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(to bottom, #70c5ce, #ffffff);
+  overflow: hidden;
 }
 
 canvas {
   border: 2px solid #000;
-  background: #70c5ce;
+  background: #cceeff;
+}
+
+#startBtn, #restartBtn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 12px 24px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  border-radius: 10px;
+  background: #1e90ff;
+  color: white;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+  z-index: 10;
+}
+
+#restartBtn {
+  background: #28a745;
 }
