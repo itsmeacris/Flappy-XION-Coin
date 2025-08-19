@@ -1,36 +1,55 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Load assets
-const birdImg = new Image();
-birdImg.src = "xioncoin.png";
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+const gameOverBanner = document.getElementById("gameOverBanner");
 
-// Sounds
+let frames = 0;
+let score = 0;
+let gameStarted = false;
+let gameOver = false;
+
+// Load assets
+const coinImg = new Image();
+coinImg.src = "xioncoin.png";
+
 const flapSound = new Audio("flap.wav");
 const pointSound = new Audio("point.wav");
 const hitSound = new Audio("hit.wav");
 const dieSound = new Audio("die.wav");
 const swooshSound = new Audio("swoosh.wav");
 
-// Game state
-let bird, pipes, frame, score, gameOver, gameStarted;
+// Bird (coin)
+let coin = {
+  x: 50,
+  y: 150,
+  width: 30,
+  height: 30,
+  gravity: 0.25,
+  lift: -4.6,
+  velocity: 0,
+  draw() {
+    ctx.drawImage(coinImg, this.x, this.y, this.width, this.height);
+  },
+  update() {
+    this.velocity += this.gravity;
+    this.y += this.velocity;
+    if (this.y + this.height >= canvas.height) {
+      endGame();
+    }
+  },
+  flap() {
+    this.velocity = this.lift;
+    flapSound.play();
+  }
+};
 
-// Buttons
-const startBtn = document.getElementById("startBtn");
-const restartBtn = document.getElementById("restartBtn");
-
-function resetGame() {
-  bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.25, lift: -5, velocity: 0 };
-  pipes = [];
-  frame = 0;
-  score = 0;
-  gameOver = false;
-}
-
-// Pipe generator
-function createPipe() {
-  const gap = 120;
-  const topHeight = Math.floor(Math.random() * (canvas.height - gap - 100)) + 50;
+// Pipes
+let pipes = [];
+function spawnPipe() {
+  let gap = 120;
+  let topHeight = Math.random() * (canvas.height - gap - 100) + 50;
   pipes.push({
     x: canvas.width,
     top: topHeight,
@@ -39,151 +58,113 @@ function createPipe() {
   });
 }
 
-// Draw pipes
-function drawPipes() {
-  ctx.fillStyle = "green";
-  pipes.forEach(pipe => {
-    ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
-    ctx.fillRect(pipe.x, pipe.bottom, pipe.width, canvas.height - pipe.bottom);
-
-    ctx.fillStyle = "#006400";
-    ctx.fillRect(pipe.x, pipe.top - 20, pipe.width, 20);
-    ctx.fillRect(pipe.x, pipe.bottom, pipe.width, 20);
-    ctx.fillStyle = "green";
-  });
+// Reset
+function resetGame() {
+  frames = 0;
+  score = 0;
+  coin.y = 150;
+  coin.velocity = 0;
+  pipes = [];
+  gameOverBanner.style.display = "none";
 }
 
-// Draw bird
-function drawBird() {
-  ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
-}
+// Game loop
+function gameLoop() {
+  if (!gameStarted || gameOver) return;
 
-// Draw score
-function drawScore() {
-  ctx.fillStyle = "#333";
-  ctx.font = "24px Arial";
-  ctx.textAlign = "left";
-  ctx.fillText(`Score: ${score}`, 10, 30);
-}
-
-// Draw Game Over banner
-function drawGameOver() {
-  const bannerWidth = 260;
-  const bannerHeight = 80;
-  const x = (canvas.width - bannerWidth) / 2;
-  const y = canvas.height / 3;
-
-  ctx.fillStyle = "#FFD700";
-  ctx.fillRect(x, y, bannerWidth, bannerHeight);
-
-  ctx.strokeStyle = "#DAA520";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(x, y, bannerWidth, bannerHeight);
-
-  ctx.fillStyle = "red";
-  ctx.font = "bold 32px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("GAME OVER", canvas.width / 2, y + 50);
-}
-
-// Update loop
-function update() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (!gameStarted) {
-    return; // idle until start
-  }
+  // Background (sky + clouds + sun)
+  ctx.fillStyle = "#87CEEB";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  bird.velocity += bird.gravity;
-  bird.y += bird.velocity;
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(80, 80, 30, 0, Math.PI * 2); // Sun
+  ctx.fill();
 
-  if (bird.y + bird.height > canvas.height) {
-    bird.y = canvas.height - bird.height;
-    endGame();
-  }
+  ctx.beginPath(); // Cloud
+  ctx.arc(200, 100, 20, 0, Math.PI * 2);
+  ctx.arc(220, 100, 25, 0, Math.PI * 2);
+  ctx.arc(240, 100, 20, 0, Math.PI * 2);
+  ctx.fill();
 
-  if (frame % 90 === 0) createPipe();
-  pipes.forEach(pipe => { pipe.x -= 2; });
+  // Pipes
+  if (frames % 90 === 0) spawnPipe();
+  pipes.forEach((p, i) => {
+    p.x -= 2;
+    ctx.fillStyle = "#228B22";
+    ctx.fillRect(p.x, 0, p.width, p.top);
+    ctx.fillRect(p.x, p.bottom, p.width, canvas.height - p.bottom);
 
-  pipes.forEach(pipe => {
-    if (bird.x < pipe.x + pipe.width &&
-        bird.x + bird.width > pipe.x &&
-        (bird.y < pipe.top || bird.y + bird.height > pipe.bottom)) {
+    // Collision
+    if (
+      coin.x < p.x + p.width &&
+      coin.x + coin.width > p.x &&
+      (coin.y < p.top || coin.y + coin.height > p.bottom)
+    ) {
       endGame();
     }
 
-    if (pipe.x + pipe.width === bird.x) {
+    // Passed pipe
+    if (p.x + p.width === coin.x) {
       score++;
       pointSound.play();
     }
+
+    // Remove old pipes
+    if (p.x + p.width < 0) pipes.splice(i, 1);
   });
 
-  drawPipes();
-  drawBird();
-  drawScore();
+  // Bird
+  coin.update();
+  coin.draw();
 
-  if (gameOver) {
-    drawGameOver();
-    restartBtn.style.display = "block"; // show restart overlay
-  }
+  // Score
+  ctx.fillStyle = "#333";
+  ctx.font = "24px Arial";
+  ctx.fillText(`Score: ${score}`, 10, 30);
 
-  frame++;
-  requestAnimationFrame(update);
+  frames++;
+  requestAnimationFrame(gameLoop);
 }
 
-// End Game
+// Game Over
 function endGame() {
   if (!gameOver) {
     hitSound.play();
     dieSound.play();
   }
   gameOver = true;
+  gameOverBanner.style.display = "block";
+  restartBtn.style.display = "block";
 }
 
-// Button Events
-startBtn.addEventListener("click", () => {
-  resetGame();
-  gameStarted = true;
-  swooshSound.play();
-  startBtn.style.display = "none";  // hide start
-  restartBtn.style.display = "none"; // just in case
-});
-
-restartBtn.addEventListener("click", () => {
-  resetGame();
-  gameStarted = true;
-  swooshSound.play();
-  restartBtn.style.display = "none"; // hide restart
-});
-
-// Keyboard
-document.addEventListener("keydown", (e) => {
+// Controls
+document.addEventListener("keydown", e => {
   if (e.code === "Space") {
-    if (!gameStarted) {
-      startBtn.click(); // simulate start
-    } else if (gameOver) {
-      restartBtn.click();
-    } else {
-      bird.velocity = bird.lift;
-      flapSound.play();
-    }
+    if (gameStarted && !gameOver) coin.flap();
   }
 });
-
-// Mouse/Tap flap
 canvas.addEventListener("click", () => {
-  if (gameStarted && !gameOver) {
-    bird.velocity = bird.lift;
-    flapSound.play();
-  }
+  if (gameStarted && !gameOver) coin.flap();
 });
 
-// Init
-function init() {
+// Start button
+startBtn.addEventListener("click", () => {
+  swooshSound.play();
+  gameStarted = true;
+  startBtn.style.display = "none";
+  restartBtn.style.display = "none";
   resetGame();
-  gameStarted = false;
-  startBtn.style.display = "block";  // show start at first load
-  restartBtn.style.display = "none"; // hidden initially
-  update();
-}
-init();
+  gameLoop();
+});
+
+// Restart button
+restartBtn.addEventListener("click", () => {
+  swooshSound.play();
+  gameOver = false;
+  restartBtn.style.display = "none";
+  resetGame();
+  gameLoop();
+});
