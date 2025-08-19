@@ -1,57 +1,20 @@
-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  margin: 0;
-  background: linear-gradient(to bottom, #87CEEB, #E0F6FF); /* sky look */
-  font-family: Arial, sans-serif;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flappy XION</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Flappy XION</h1>
+  <div class="game-wrapper">
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-h1 {
-  margin-bottom: 10px;
-  color: #333;
-  font-size: 28px;
-}
+    <!-- Overlay Buttons -->
+    <button id="startBtn" class="overlay-btn">▶ Start</button>
+    <button id="restartBtn" class="overlay-btn">↻ Restart</button>
+  </div>
 
-#gameCanvas {
-  border: 3px solid #333;
-  border-radius: 8px;
-  background: #E0F6FF;
-  display: block;
-  margin-bottom: 20px;
-}
-
-.btn-container {
-  display: flex;
-  gap: 15px;
-}
-
-button {
-  padding: 10px 20px;
-  font-size: 18px;
-  font-weight: bold;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-#startBtn {
-  background-color: #4CAF50;
-  color: white;
-}
-#startBtn:hover {
-  background-color: #45a049;
-  transform: scale(1.05);
-}
-
-#restartBtn {
-  background-color: #f44336;
-  color: white;
-}
-#restartBtn:hover {
-  background-color: #d7372b;
-  transform: scale(1.05);
-}
+  <script src="script.js"></script>
+</body>
+</html>
