@@ -1,53 +1,63 @@
 body {
-  margin: 0;
-  padding: 0;
-  background: #70c5ce;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   height: 100vh;
-  overflow: hidden;
+  margin: 0;
+  background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
   font-family: Arial, sans-serif;
 }
 
-canvas {
-  border: 2px solid #000;
-  background: #cceeff;
+h1 {
+  margin: 10px;
+  color: #333;
+  font-size: 28px;
 }
 
-#menu {
+.game-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+#gameCanvas {
+  border: 3px solid #333;
+  border-radius: 8px;
+  background: #E0F6FF;
+  display: block;
+}
+
+/* Overlay Buttons */
+.overlay-btn {
   position: absolute;
-  top: 45%;
   left: 50%;
+  top: 50%;
   transform: translate(-50%, -50%);
-  text-align: center;
-  z-index: 10;
+  padding: 12px 28px;
+  font-size: 22px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  display: none; /* hidden by default */
 }
 
-#startBtn, #restartBtn {
-  padding: 12px 24px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  border: none;
-  border-radius: 10px;
-  background: #1e90ff;
+#startBtn {
+  background-color: #4CAF50;
   color: white;
-  box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+}
+#startBtn:hover {
+  background-color: #45a049;
+  transform: translate(-50%, -50%) scale(1.05);
 }
 
 #restartBtn {
-  background: #28a745;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
+  background-color: #f44336;
+  color: white;
 }
-
-#howToPlay {
-  margin-top: 10px;
-  font-size: 16px;
-  color: #fff;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+#restartBtn:hover {
+  background-color: #d7372b;
+  transform: translate(-50%, -50%) scale(1.05);
 }
