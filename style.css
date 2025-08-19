@@ -4,8 +4,9 @@ body {
   align-items: center;
   height: 100vh;
   margin: 0;
-  background: linear-gradient(to bottom, #87CEEB, #E0F6FF); /* sky */
+  background: linear-gradient(to bottom, #87CEEB, #E0F6FF); /* Sky gradient */
 }
+
 #gameCanvas {
   border: 3px solid #333;
   border-radius: 8px;
