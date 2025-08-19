@@ -7,6 +7,7 @@ body {
   align-items: center;
   height: 100vh;
   overflow: hidden;
+  font-family: Arial, sans-serif;
 }
 
 canvas {
@@ -14,11 +15,16 @@ canvas {
   background: #cceeff;
 }
 
-#startBtn, #restartBtn {
+#menu {
   position: absolute;
-  top: 50%;
+  top: 45%;
   left: 50%;
   transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+}
+
+#startBtn, #restartBtn {
   padding: 12px 24px;
   font-size: 20px;
   font-weight: bold;
@@ -28,9 +34,20 @@ canvas {
   background: #1e90ff;
   color: white;
   box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
-  z-index: 10;
 }
 
 #restartBtn {
   background: #28a745;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+#howToPlay {
+  margin-top: 10px;
+  font-size: 16px;
+  color: #fff;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 }
