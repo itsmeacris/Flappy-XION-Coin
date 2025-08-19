@@ -1,242 +1,119 @@
-// ==================== GAME SETUP ====================
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-canvas.width = 400;
-canvas.height = 600;
-
-let frames = 0;
-let gameOver = false;
-let gameStarted = false;
-
-// ==================== SOUNDS ====================
-function loadSound(src) {
-  const sound = new Audio(src);
-  sound.preload = "auto";
-  sound.load();
-  return sound;
-}
-
-const pointSound = loadSound("point.wav");
-const hitSound = loadSound("hit.wav");
-const dieSound = loadSound("die.wav");
-const swooshSound = loadSound("swoosh.wav");
-const flapSound = loadSound("flap.wav");
-
-// ==================== BIRD ====================
+// Load assets
 const birdImg = new Image();
 birdImg.src = "xioncoin.png";
 
-let bird = {
-  x: 50,
-  y: 150,
-  w: 40,
-  h: 40,
-  dy: 0
-};
+// --- Sounds ---
+const flapSound = new Audio("flap.wav");
+const pointSound = new Audio("point.wav");
+const hitSound = new Audio("hit.wav");
+const dieSound = new Audio("die.wav");
+const swooshSound = new Audio("swoosh.wav");
 
-let gravity = 0.25;
-let jump = -5;
-
-// ==================== PIPES ====================
+// Game variables
+let bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.25, lift: -5, velocity: 0 };
 let pipes = [];
-let pipeWidth = 60;
-let pipeGap = 140;
-
-// ==================== SCORE ====================
+let frame = 0;
 let score = 0;
-let highScore = 0;
+let gameOver = false;
+let gameStarted = false;
 
-// ==================== BACKGROUND ====================
-function drawBackground() {
-  // Sky gradient
-  let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, "#87CEEB"); // light blue
-  gradient.addColorStop(1, "#E0F6FF"); // softer blue
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+// --- Button elements
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
 
-  // Sun
-  ctx.beginPath();
-  ctx.arc(320, 80, 40, 0, Math.PI * 2);
-  ctx.fillStyle = "yellow";
-  ctx.fill();
-
-  // Clouds
-  drawCloud(100, 100);
-  drawCloud(250, 180);
-  drawCloud(60, 220);
+// Reset function
+function resetGame() {
+  bird.y = 150;
+  bird.velocity = 0;
+  pipes = [];
+  score = 0;
+  frame = 0;
+  gameOver = false;
 }
 
-function drawCloud(x, y) {
-  ctx.fillStyle = "white";
-  ctx.beginPath();
-  ctx.arc(x, y, 20, 0, Math.PI * 2);
-  ctx.arc(x + 25, y + 10, 25, 0, Math.PI * 2);
-  ctx.arc(x + 60, y, 20, 0, Math.PI * 2);
-  ctx.fill();
+// Pipe generator
+function createPipe() {
+  let gap = 120;
+  let topHeight = Math.floor(Math.random() * (canvas.height - gap - 100)) + 50;
+  pipes.push({
+    x: canvas.width,
+    top: topHeight,
+    bottom: topHeight + gap,
+    width: 50
+  });
 }
 
-// ==================== PIPE RENDER ====================
+// Draw pipes
 function drawPipes() {
-  ctx.fillStyle = "#228B22"; // dark green
+  ctx.fillStyle = "green";
   pipes.forEach(pipe => {
     // Top pipe
-    ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-
-    // Pipe head (top)
-    ctx.fillStyle = "#006400";
-    ctx.fillRect(pipe.x - 2, pipe.top - 20, pipeWidth + 4, 20);
-
-    // Reset color
-    ctx.fillStyle = "#228B22";
-
+    ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
     // Bottom pipe
-    ctx.fillRect(pipe.x, pipe.top + pipeGap, pipeWidth, canvas.height);
+    ctx.fillRect(pipe.x, pipe.bottom, pipe.width, canvas.height - pipe.bottom);
 
-    // Pipe head (bottom)
+    // Pipe edges (to mimic real flappy pipes)
     ctx.fillStyle = "#006400";
-    ctx.fillRect(pipe.x - 2, pipe.top + pipeGap, pipeWidth + 4, 20);
-
-    // Reset
-    ctx.fillStyle = "#228B22";
+    ctx.fillRect(pipe.x, pipe.top - 20, pipe.width, 20); // cap top
+    ctx.fillRect(pipe.x, pipe.bottom, pipe.width, 20);   // cap bottom
+    ctx.fillStyle = "green";
   });
 }
 
-// ==================== GAME FUNCTIONS ====================
+// Draw bird
 function drawBird() {
-  ctx.drawImage(birdImg, bird.x, bird.y, bird.w, bird.h);
+  ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
 }
 
+// Draw score
 function drawScore() {
-  ctx.fillStyle = "black";
+  ctx.fillStyle = "#333";
   ctx.font = "24px Arial";
-  ctx.fillText("Score: " + score, 10, 30);
-  ctx.fillText("High: " + highScore, 10, 60);
+  ctx.fillText(`Score: ${score}`, 10, 30);
 }
 
+// Draw Game Over Banner
+function drawGameOver() {
+  const bannerWidth = 260;
+  const bannerHeight = 80;
+  const x = (canvas.width - bannerWidth) / 2;
+  const y = canvas.height / 3;
+
+  ctx.fillStyle = "#FFD700"; // yellow banner
+  ctx.fillRect(x, y, bannerWidth, bannerHeight);
+
+  ctx.strokeStyle = "#DAA520";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x, y, bannerWidth, bannerHeight);
+
+  ctx.fillStyle = "red";
+  ctx.font = "bold 32px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("GAME OVER", canvas.width / 2, y + 50);
+}
+
+// Update game loop
 function update() {
-  if (!gameStarted || gameOver) return;
-
-  frames++;
-
-  bird.dy += gravity;
-  bird.y += bird.dy;
-
-  if (frames % 90 === 0) {
-    let top = Math.random() * (canvas.height - pipeGap - 100) + 50;
-    pipes.push({ x: canvas.width, top: top });
-  }
-
-  pipes.forEach(pipe => {
-    pipe.x -= 2;
-
-    if (
-      bird.x < pipe.x + pipeWidth &&
-      bird.x + bird.w > pipe.x &&
-      (bird.y < pipe.top || bird.y + bird.h > pipe.top + pipeGap)
-    ) {
-      hitSound.currentTime = 0;
-      hitSound.play();
-      dieSound.currentTime = 0;
-      dieSound.play();
-      gameOver = true;
-    }
-
-    if (pipe.x + pipeWidth === bird.x) {
-      score++;
-      pointSound.currentTime = 0;
-      pointSound.play();
-      if (score > highScore) highScore = score;
-    }
-  });
-
-  if (bird.y + bird.h >= canvas.height) {
-    gameOver = true;
-    hitSound.currentTime = 0;
-    hitSound.play();
-    dieSound.currentTime = 0;
-    dieSound.play();
-  }
-}
-
-function draw() {
-  drawBackground();
-  drawPipes();
-  drawBird();
-  drawScore();
-
   if (!gameStarted) {
-    ctx.fillStyle = "black";
-    ctx.font = "28px Arial";
-    ctx.fillText("Flappy XION", canvas.width / 2 - 80, 200);
-    ctx.fillText("Press Start", canvas.width / 2 - 70, 250);
-    ctx.font = "20px Arial";
-    ctx.fillText("Press SPACE or Click to Flap", canvas.width / 2 - 120, 300);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#333";
+    ctx.font = "22px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Press SPACE or TAP Start", canvas.width / 2, canvas.height / 2);
+    ctx.fillText("Click/Tap to flap!", canvas.width / 2, canvas.height / 2 + 30);
+    return;
   }
 
-  if (gameOver) {
-    ctx.fillStyle = "red";
-    ctx.font = "32px Arial";
-    ctx.fillText("GAME OVER", canvas.width / 2 - 100, canvas.height / 2);
-  }
-}
-
-function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
 
-// ==================== CONTROLS ====================
-function flap() {
-  if (!gameStarted || gameOver) return;
-  bird.dy = jump;
-  flapSound.currentTime = 0;
-  flapSound.play();
-}
+  // Bird physics
+  bird.velocity += bird.gravity;
+  bird.y += bird.velocity;
 
-document.addEventListener("keydown", e => {
-  if (e.code === "Space") flap();
-});
-canvas.addEventListener("mousedown", flap);
-canvas.addEventListener("touchstart", flap);
-
-// ==================== BUTTONS ====================
-function startGame() {
-  if (!gameStarted) {
-    gameStarted = true;
-    gameOver = false;
-    bird.y = 150;
-    bird.dy = 0;
-    pipes = [];
-    score = 0;
-
-    // unlock sounds
-    [pointSound, hitSound, dieSound, swooshSound, flapSound].forEach(s => {
-      s.play().then(() => s.pause()).catch(()=>{});
-    });
-
-    swooshSound.currentTime = 0;
-    swooshSound.play();
+  if (bird.y + bird.height > canvas.height) {
+    bird.y = canvas.height - bird.height;
+    endGame();
   }
-}
-
-function restartGame() {
-  if (gameOver) {
-    gameOver = false;
-    bird.y = 150;
-    bird.dy = 0;
-    pipes = [];
-    score = 0;
-    swooshSound.currentTime = 0;
-    swooshSound.play();
-  }
-}
-
-document.getElementById("startBtn").addEventListener("click", startGame);
-document.getElementById("restartBtn").addEventListener("click", restartGame);
-
-// ==================== START LOOP ====================
-loop();
