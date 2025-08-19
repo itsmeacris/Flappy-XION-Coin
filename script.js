@@ -1,114 +1,100 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-canvas.width = 400;
-canvas.height = 600;
-
-// Load images
-const birdImg = new Image();
-birdImg.src = "https://i.ibb.co/4fwkPzM/flappy-bird.png"; // placeholder bird
-
 const logoImg = new Image();
-logoImg.src = "xioncoin.png"; // your flame logo
+logoImg.src = "xioncoin.png"; // make sure file is named exactly this!
 
-// Bird properties
-let bird = {
-  x: 50,
-  y: 150,
-  width: 34,
-  height: 24,
-  gravity: 0.6,
-  lift: -10,
-  velocity: 0
-};
+let bird, pipes, score, gravity, jump, pipeWidth, pipeGap, gameInterval;
+let gameRunning = false;
 
-let pipes = [];
-let frame = 0;
-let score = 0;
-let gameOver = false;
-
-// Controls
-document.addEventListener("keydown", () => {
-  if (!gameOver) bird.velocity = bird.lift;
-});
-document.addEventListener("click", () => {
-  if (!gameOver) bird.velocity = bird.lift;
+// Start button
+document.getElementById("startBtn").addEventListener("click", () => {
+  document.getElementById("startBtn").style.display = "none";
+  startGame();
 });
 
-// Spawn new pipes
-function spawnPipe() {
-  let gap = 120;
-  let topHeight = Math.random() * (canvas.height / 2);
-  pipes.push({
-    x: canvas.width,
-    top: topHeight,
-    bottom: topHeight + gap,
-    width: 50
-  });
+// Restart button
+document.getElementById("restartBtn").addEventListener("click", () => {
+  location.reload();
+});
+
+function startGame() {
+  bird = { x: 50, y: 150, width: 40, height: 40, velocity: 0 };
+  pipes = [];
+  score = 0;
+  gravity = 0.5;
+  jump = -8;
+  pipeWidth = 60;
+  pipeGap = 150;
+
+  document.addEventListener("keydown", flap);
+  document.addEventListener("click", flap);
+
+  gameRunning = true;
+  gameInterval = setInterval(update, 20);
 }
 
-// Game loop
-function update() {
-  if (gameOver) {
-    ctx.fillStyle = "black";
-    ctx.font = "36px Arial";
-    ctx.fillText("Game Over!", 120, 300);
-    return;
+function flap(e) {
+  if (e.code === "Space" || e.type === "click") {
+    bird.velocity = jump;
   }
+}
 
+function update() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Bird physics
-  bird.velocity += bird.gravity;
+  bird.velocity += gravity;
   bird.y += bird.velocity;
-
-  // Draw bird
-  ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+  ctx.drawImage(logoImg, bird.x, bird.y, bird.width, bird.height);
 
   // Pipes
-  if (frame % 90 === 0) spawnPipe();
+  if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+    let pipeY = Math.random() * (canvas.height - pipeGap - 100) + 50;
+    pipes.push({ x: canvas.width, y: pipeY });
+  }
 
   for (let i = 0; i < pipes.length; i++) {
     let p = pipes[i];
-    p.x -= 2; // move left
+    p.x -= 2;
 
-    // Draw top pipe
+    // Top pipe
     ctx.fillStyle = "green";
-    ctx.fillRect(p.x, 0, p.width, p.top);
+    ctx.fillRect(p.x, 0, pipeWidth, p.y);
 
-    // Draw bottom pipe
-    ctx.fillRect(p.x, p.bottom, p.width, canvas.height - p.bottom);
+    // Bottom pipe
+    ctx.fillRect(p.x, p.y + pipeGap, pipeWidth, canvas.height - (p.y + pipeGap));
 
     // Collision
     if (
-      bird.x < p.x + p.width &&
+      bird.x < p.x + pipeWidth &&
       bird.x + bird.width > p.x &&
-      (bird.y < p.top || bird.y + bird.height > p.bottom)
+      (bird.y < p.y || bird.y + bird.height > p.y + pipeGap)
     ) {
-      gameOver = true;
+      gameOver();
     }
 
-    // Passed pipe → increase score
-    if (p.x + p.width === bird.x) {
+    // Score
+    if (p.x + pipeWidth === bird.x) {
       score++;
     }
   }
 
-  // Logo = score icon
-  ctx.drawImage(logoImg, 10, 10, 30, 30);
-
-  // Score text
-  ctx.fillStyle = "#000";
-  ctx.font = "24px Arial";
-  ctx.fillText(" x " + score, 45, 35);
-
-  // Ground collision
-  if (bird.y + bird.height >= canvas.height) {
-    gameOver = true;
+  // Ground / ceiling collision
+  if (bird.y + bird.height > canvas.height || bird.y < 0) {
+    gameOver();
   }
 
-  frame++;
-  requestAnimationFrame(update);
+  // Score display
+  ctx.fillStyle = "black";
+  ctx.font = "20px Arial";
+  ctx.fillText("Score: " + score, 10, 25);
 }
 
-update();
+function gameOver() {
+  clearInterval(gameInterval);
+  ctx.fillStyle = "red";
+  ctx.font = "30px Arial";
+  ctx.fillText("Game Over!", canvas.width / 2 - 80, canvas.height / 2);
+  document.getElementById("restartBtn").style.display = "block";
+}
