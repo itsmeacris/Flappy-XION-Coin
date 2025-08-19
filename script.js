@@ -2,18 +2,16 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const logoImg = new Image();
-logoImg.src = "xioncoin.png"; // make sure file is named exactly this!
+logoImg.src = "xioncoin.png";
 
 let bird, pipes, score, gravity, jump, pipeWidth, pipeGap, gameInterval;
 let gameRunning = false;
 
-// Start button
 document.getElementById("startBtn").addEventListener("click", () => {
-  document.getElementById("startBtn").style.display = "none";
+  document.getElementById("menu").style.display = "none"; // hide menu
   startGame();
 });
 
-// Restart button
 document.getElementById("restartBtn").addEventListener("click", () => {
   location.reload();
 });
@@ -43,7 +41,7 @@ function flap(e) {
 function update() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Bird physics
+  // Bird
   bird.velocity += gravity;
   bird.y += bird.velocity;
   ctx.drawImage(logoImg, bird.x, bird.y, bird.width, bird.height);
@@ -58,14 +56,10 @@ function update() {
     let p = pipes[i];
     p.x -= 2;
 
-    // Top pipe
     ctx.fillStyle = "green";
     ctx.fillRect(p.x, 0, pipeWidth, p.y);
-
-    // Bottom pipe
     ctx.fillRect(p.x, p.y + pipeGap, pipeWidth, canvas.height - (p.y + pipeGap));
 
-    // Collision
     if (
       bird.x < p.x + pipeWidth &&
       bird.x + bird.width > p.x &&
@@ -74,18 +68,15 @@ function update() {
       gameOver();
     }
 
-    // Score
     if (p.x + pipeWidth === bird.x) {
       score++;
     }
   }
 
-  // Ground / ceiling collision
   if (bird.y + bird.height > canvas.height || bird.y < 0) {
     gameOver();
   }
 
-  // Score display
   ctx.fillStyle = "black";
   ctx.font = "20px Arial";
   ctx.fillText("Score: " + score, 10, 25);
